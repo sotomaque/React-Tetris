@@ -1,43 +1,80 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useState } from 'react';
 
+// used when we restart the game
 import { createStage } from '../gameHelpers';
 
+// styled components
 import { StyledTetrisWrapper, StyledTetris } from './styles/StyledTetris';
 
-
+// components
 import Stage from './Stage';
 import Display from './Display';
 import StartButton from './StartButton';
 
+// custom hooks
+import { usePlayer } from '../hooks/usePlayer';
+import { useStage } from '../hooks/useStage';
+
 const Tetris = () => {
-    useLockBodyScroll(); // prevent scrolling
+    //useLockBodyScroll(); // prevent scrolling
+
+    const [dropTime, setDropTime] = useState(null);
+    const [gameOver, setGameOver] = useState(false);
+
+    const [player, updatePlayerPos, resetPlayer] = usePlayer();
+    const [stage, setStage] = useStage(player, resetPlayer);
+
+    const movePlayer = (direction) => {
+        updatePlayerPos({ x: direction, y: 0, collided: false });
+    }
+
+    const startGame = () => {
+        // reset everything
+        setStage(createStage());
+        resetPlayer();
+    }
+
+    const drop = () => {
+        updatePlayerPos({ x: 0, y: 1, collided: false });
+    }
+
+    const dropPlayer = () => {
+        drop();
+    }
+
+    const move = ({ keyCode }) => {
+        console.log(keyCode)
+        if (!gameOver) {
+            if (keyCode === 37) {
+                movePlayer(-1);
+            } else if (keyCode === 39) {
+                movePlayer(1);
+            } else if (keyCode === 40) {
+                dropPlayer(1);
+            }
+        }
+    }
 
     return (
-        <StyledTetrisWrapper>
+        <StyledTetrisWrapper role="button" tabIndex="0" onKeyDown={e => move(e)}>
             <StyledTetris>
-                <Stage stage={createStage()} />
+                <Stage stage={stage} />
                 <aside>
-                    <div>
-                        <Display text="Score" />
-                        <Display text="Rows" />
-                        <Display text="Level" />
-                    </div>
-                    <StartButton />
+                {
+                    gameOver? <Display gameOver={gameOver} text="Game Over" /> : (
+                        <div>
+                            <Display text="Score" />
+                            <Display text="Rows" />
+                            <Display text="Level" />
+                        </div>
+                    )
+                }
+                <StartButton callBack={startGame} />
+                    
                 </aside>
             </StyledTetris>
         </StyledTetrisWrapper>
     )
-}
-
-function useLockBodyScroll() {
-    useLayoutEffect(() => {
-     // Get original body overflow
-     const originalStyle = window.getComputedStyle(document.body).overflow;  
-     // Prevent scrolling on mount
-     document.body.style.overflow = 'hidden';
-     // Re-enable scrolling when component unmounts
-     return () => document.body.style.overflow = originalStyle;
-     }, []); // Empty array ensures effect is only run on mount and unmount
 }
 
 export default Tetris;
